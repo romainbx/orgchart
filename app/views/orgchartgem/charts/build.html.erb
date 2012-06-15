@@ -1,0 +1,259 @@
+<%= link_to 'Charts', orgchart.charts_path %></td>
+<div class="chart_title"><%=@chart.title%></div>
+<div class="chart_title_translation"><%=@chart.english%></div>
+
+<script>
+  var closeThis = function(id) {
+    $("#windowForm").dialog('close');
+  }
+
+  var addForm = function(parent, pos){
+    $('#nodeForm').reset();
+    $('input[name=node_id]').val(null);
+    if (parent)
+    {
+      parent_id = $(parent).attr('id').replace('p','');
+      $('input[name=parent_id]').val(parent_id);
+
+      var checkboxes = $(".multiselect").find("input:checkbox");
+      checkboxes.each(function() {
+        var checkbox = $(this);
+        if (checkbox.attr('value') == parent_id)
+          checkbox.attr('checked', true);
+        else
+          checkbox.attr('checked', false);
+      });
+      $(".multiselect").multiselect();
+
+      coord = validCoord(pos);
+      $('#windowForm').dialog({position:[coord.x, coord.y]});
+    }
+    $("#windowForm").dialog('open');
+    return false;
+  }
+
+  var editForm = function(el, pos){
+    $('#nodeForm').reset();
+    if (el)
+    {
+      id = $(el).attr('id').replace('p','');
+      $.post('loadNode', {node_id : id}, function(result){
+        $('input[name=node_id]').val(result['id']);
+        $('input[name=title]').val(result['title']);
+        $('input[name=chinese]').val(result['chinese']);
+        $('input[name=english]').val(result['english']);
+        $('input[name=comment]').val(result['comment']);
+        //$('input[name=node_type]').val(result['node_type']);
+        decorations=result['decoration'].split(';');
+        for (var i=0; i<decorations.length; i++)
+        {
+          deco = decorations[i].split(':');
+          deco[0]=deco[0].replace('-','_');
+          $('input[name='+deco[0]+']').val(deco[1]);
+        }
+        $('input[name=border_color]').css('background-color',$('input[name=border_color]').val());
+        $('input[name=background_color]').css('background-color',$('input[name=background_color]').val());
+        if ($('input[name=width]').val() != '')
+        {
+        	$("#activeWidth").attr('checked', true);
+        	$("input[name=width]").attr('disabled', false);
+        }
+        else
+        {
+          $("#activeWidth").attr('checked', false);
+          $("input[name=width]").attr('disabled', true);
+        }
+
+        $("select[name=node_type]").val(result['node_type']);
+
+
+        parents_ids = [];
+        for (var i=0; i<result['parents'].length; i++)
+          parents_ids.push(result['parents'][i]['id']);
+
+        var checkboxes = $(".multiselect").find("input:checkbox");
+        checkboxes.each(function() {
+            var checkbox = $(this);
+            if ($.inArray(parseInt(checkbox.attr('value')), parents_ids) != -1)
+            	checkbox.attr('checked', true);
+            else
+            	checkbox.attr('checked', false);
+        });
+        $(".multiselect").multiselect();
+      });
+
+      coord = validCoord(pos);
+      $('#windowForm').dialog({position:[coord.x, coord.y]});
+    }
+    $('#windowForm').dialog('open');
+    return false;
+  }
+
+  var validCoord = function(pos){
+    topForm = pos.docY-50;
+    if (topForm < 0) topForm = 10;
+    left = pos.docX-100;
+    if (left < 0) left = 10;
+
+    bottomEnd = pos.docY-100 + parseInt($('#nodeForm').css('height'));
+    rightEnd = pos.docX-100 + parseInt($('#nodeForm').css('width'));
+
+    if (bottomEnd > document.body.clientHeight)
+      topForm = topForm - (bottomEnd - document.body.clientHeight) - 20;
+    if (rightEnd > document.body.clientWidth)
+      left = left - (rightEnd - document.body.clientWidth) - 20;
+
+    var coord = {};
+    coord.y = topForm;
+    coord.x = left;
+
+    return coord;
+  }
+
+  var deleteNode = function(el){
+    if ($(el).attr('children') && $(el).attr('children').length > 0)
+      alert('Impossible to delete this node because it has children.');
+    else
+    {
+      var answer = confirm("Delete?");
+      if (answer)
+      {
+        id = $(el).attr('id').replace('p','');
+        $.post('deleteFromChart', {node_id : id, chart_id : <%=@chart.id%>}, function(result) {
+        	$("#chart").empty();
+					initChart(result);
+					initMenu();
+        	initSelectParents();
+        });
+      }
+    }
+    return false;
+  }
+
+  var initSelectParents = function() {
+  	$("#selectParents").empty();
+  	$.post('loadNodes', {chart_id : <%=@chart.id%>}, function(result){
+  		for (var i=0; i<result.length; i++)
+  		{
+    	  $div = $("<div>");
+    	  $input = $("<input type='checkbox' name='parents[]'>");
+    	  $input.attr('value', result[i]['id']);
+    	  $div.append($input, result[i]['title']);
+    	  $("#selectParents").append($div);
+      }
+  	});
+  }
+
+  var initMenu = function() {
+    $(".node").contextMenu({
+        menu: 'myMenu'
+      },
+      function(action, el, pos) {
+        if (action == "add")
+          addForm(el, pos);
+        else if (action == "edit")
+          editForm(el, pos);
+        else if (action == "delete")
+          deleteNode(el);
+    }).addClass('node-highlight');
+  }
+
+  jQuery(document).ready(function() {
+
+  	$("#windowForm").dialog({autoOpen: false});
+  	$("#windowForm").dialog({ width: 630 });
+
+		$( "#slider" ).slider({
+			value: 100,
+			min: 0,
+			max: 100,
+			step: 1,
+			slide: function( event, ui ) {
+				$( "#width" ).val( ui.value +'%' );
+			}
+		});
+		$( "#width" ).val($( "#slider" ).slider( "value" )+'%');
+
+		$("#activeWidth").change(function(){
+			if ($(this).is(':checked'))
+			{
+				$("input[name=width]").attr('disabled', false);
+			}
+			else
+				$("input[name=width]").attr('disabled', true);
+		});
+
+    initOk = initChart(<%= raw @data%>);
+    if(!initOk)
+    {
+      $('.ui-dialog-titlebar-close').css('display','none');
+      addForm();
+    }
+
+    initMenu();
+
+    $('#nodeForm').submit(function (){
+      $.post($(this).attr('action'), $(this).serialize(), function(result) {
+        $("#chart").empty();
+        initChart(result);
+        initMenu();
+        initSelectParents();
+      });
+
+      $("#windowForm").dialog('close');
+      return false;
+    });
+
+  });
+</script>
+<ul id="myMenu" class="contextMenu">
+    <li class="">
+        <a href="#add">New node</a>
+    </li>
+    <li class="edit">
+        <a href="#edit">Edit</a>
+    </li>
+    <li class="delete">
+        <a href="#delete">Delete</a>
+    </li>
+</ul>
+<div id="windowForm" title="Node configuration">
+  <form id="nodeForm" method="post" action="nodeOnChart">
+    <fieldset>
+    	<legend>General</legend>
+      <label>Title :</label><input type="text" name="title"/><br>
+      <label>English :</label><input type="text" name="english"/><br>
+      <label>Chinese :</label><input type="text" name="chinese"/><br>
+      <label>Comment :</label><input type="text" name="comment"/><br>
+      <label>Type :</label><select name="node_type"style="width:100px;"><option value="">Standard</option><option value="pile">Pile</option><option value="pile-son">Pile-son</option></select><br>
+    </fieldset>
+    <fieldset>
+    <legend>Decoration</legend>
+    	<div style="width:280px;float:left;">
+      <input type="checkbox" id="activeWidth" style="width:15px;float:left;"><label for="width" style="width:150px;">Check to set the width :</label>
+      <input type="text" id="width" name="width" style="width:50px;margin-top:-3px;text-align:center;border:0; color:#444; text-shadow:0px 1px 0px white; font-weight:bold;" disabled/>
+      <div id="slider" style="width:220px;margin-left:5px;margin-top:10px;"></div>
+      </div>
+      <div style="width:280px;float:right;">
+      <label style="width:200px;line-height:30px;">Color of the border :</label><input name="border_color" value="#FFFFFF" class="color {hash:true}" autocomplete="off" style="background-image: none; background-color: rgb(186, 255, 211); color: rgb(0, 0, 0);"><br>
+      <label style="width:200px;line-height:30px;">Color of the background :</label><input name="background_color" value="#FFFFFF" class="color {hash:true}" autocomplete="off" style="background-image: none; background-color: rgb(186, 255, 211); color: rgb(0, 0, 0);"><br>
+      </div>
+    </fieldset>
+    <fieldset>
+    <legend>Parents</legend>
+    <div id="selectParents" class="multiselect" style="width:100%;">
+    	<% @nodes.each do |node| %>
+    	  <div><input type="checkbox" name="parents[]" value="<%=node.id%>" /><%=node.title%></div>
+    	<% end %>
+    </div>
+    </fieldset>
+
+    <input type="hidden" name="node_id">
+    <input type="hidden" name="parent_id">
+    <input type="hidden" name="chart_id" value="<%=@chart.id%>">
+    <div style="clear:both;text-align:center;">
+      <input type="submit" value="Submit"/>
+    </div>
+  </form>
+</div>
+<div id="chart" class="orgChart"></div>

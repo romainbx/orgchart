@@ -1,0 +1,33 @@
+<%= form_for([orgchart, @chart]) do |f| %>
+  <% if @chart.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(@chart.errors.count, "error") %> prohibited this chart from being saved:</h2>
+
+      <ul>
+      <% @chart.errors.full_messages.each do |msg| %>
+        <li><%= msg %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= f.label :title %><br />
+    <%= f.text_field :title %>
+  </div>
+  <div class="field">
+    <%= f.label :english %><br />
+    <%= f.text_field :english %>
+  </div>
+  <div class="field">
+    <%= f.label :chinese %><br />
+    <%= f.text_field :chinese %>
+  </div>
+  <div class="field">
+    <%= f.label :content %><br />
+    <%= f.text_area :content %>
+  </div>
+  <div class="actions">
+    <%= f.submit %>
+  </div>
+<% end %>

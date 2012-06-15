@@ -1,0 +1,10 @@
+<%= link_to 'Charts', orgchart.charts_path %></td>
+<div class="chart_title"><%=@chart.title%></div>
+<div class="chart_title_translation"><%=@chart.english%></div>
+
+<script>
+jQuery(document).ready(function() {
+  initChart(<%= raw @data%>);
+});
+</script>
+<div id="chart" class="orgChart"></div>

@@ -1,0 +1,70 @@
+.chart_title {
+  font-size:24px;
+  color:#800000;
+  text-align:center;
+  font-family:Trebuchet MS;
+  padding:10px;
+}
+
+.chart_title_translation {
+  font-size:18px;
+  color:#800000;
+  text-align:center;
+  font-family:Trebuchet MS;
+  margin-bottom:30px;
+  padding:10px;
+}
+
+#windowForm, #nodeForm {
+  font-size:12px;
+  width:600px;
+}
+
+#nodeForm label {
+  width:100px;
+  float:left;
+  padding:0px 0;
+}
+
+#nodeForm input, select {
+  padding:5px;
+  margin:5px;
+  border:1px solid #AAA;
+  border-radius:5px;
+}
+#nodeForm input {
+  width:450px;
+}
+#nodeForm select {
+  width:200px;
+}
+
+input.color {
+  cursor:pointer;
+  font-size: 0px;
+  width:16px!important;
+  height:16px;
+  margin-left: 43px!important;
+}
+
+.form-title {
+  background:#888;
+  color:white;
+  margin-bottom:20px;
+  font-size:16px;
+  font-weight:bold;
+  padding:5px;
+  text-align:center;
+}
+.form-close {
+  cursor:pointer;
+}
+
+/**/
+.ui-dialog {
+	padding:0px;
+}
+.ui-dialog-titlebar {
+	border:none;
+	border-radius:4px 4px 0px 0px;
+}

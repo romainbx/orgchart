@@ -1,0 +1,251 @@
+<%= link_to 'Charts', charts_path %></td>
+<div class="chart_title"><%=@chart.title%></div>
+<div class="chart_title_translation"><%=@chart.title%></div>
+
+<script>
+  var closeThis = function(id) {
+    $('#'+id).css('display', 'none');
+  }
+
+  var addForm = function(parent, pos){
+    $('#nodeForm').reset();
+    $('input[name=node_id]').val(null);
+    if (parent)
+    {
+      parent_id = $(parent).attr('id').replace('p','');
+      $('#nodeForm > div.form-close').css('display','block');
+      $('#nodeForm').css('position','absolute');
+      $('input[name=parent_id]').val(parent_id);
+
+      $("select[name=parents[]] option").each(function(){
+        if ($(this).attr('value') == parent_id)
+          $(this).attr('selected', 'selected');
+        else
+          $(this).attr('selected', false);
+      });
+
+      coord = validCoord(pos);
+      $('#nodeForm').css('top', coord.top);
+      $('#nodeForm').css('left', coord.left);
+    }
+    $('#nodeForm').css('display', 'block');
+    return false;
+  }
+
+  var editForm = function(el, pos){
+    $('#nodeForm').reset();
+    if (el)
+    {
+      id = $(el).attr('id').replace('p','');
+      $.post('loadNode', {node_id : id}, function(result){
+        $('input[name=node_id]').val(result['id']);
+        $('input[name=title]').val(result['title']);
+        $('input[name=chinese]').val(result['chinese']);
+        $('input[name=english]').val(result['english']);
+        $('input[name=comment]').val(result['comment']);
+        $('input[name=node_type]').val(result['node_type']);
+        decorations=result['decoration'].split(';');
+        for (var i=0; i<decorations.length; i++)
+        {
+          deco = decorations[i].split(':');
+          deco[0]=deco[0].replace('-','_');
+          $('input[name='+deco[0]+']').val(deco[1]);
+        }
+        $('input[name=border_color]').css('background-color',$('input[name=border_color]').val());
+                $('input[name=background_color]').css('background-color',$('input[name=background_color]').val());
+
+        parents_ids = [];
+        for (var i=0; i<result['parents'].length; i++)
+          parents_ids.push(result['parents'][i]['id']);
+        $("select[name=parents[]] option").each(function(){
+          if ($.inArray(parseInt($(this).attr('value')), parents_ids) != -1)
+            $(this).attr('selected', 'selected');
+          else
+            $(this).attr('selected', false);
+        });
+      });
+
+      coord = validCoord(pos);
+      $('#nodeForm').css('top', coord.top);
+      $('#nodeForm').css('left', coord.left);
+    }
+    $('#nodeForm').css('display', 'block');
+    return false;
+  }
+
+  var validCoord = function(pos){
+    topForm = pos.docY-50;
+    if (topForm < 0) topForm = 10;
+    left = pos.docX-100;
+    if (left < 0) left = 10;
+
+    bottomEnd = pos.docY-100 + parseInt($('#nodeForm').css('height'));
+    rightEnd = pos.docX-100 + parseInt($('#nodeForm').css('width'));
+
+    if (bottomEnd > document.body.clientHeight)
+      topForm = topForm - (bottomEnd - document.body.clientHeight) - 10;
+    if (rightEnd > document.body.clientWidth)
+      left = left - (rightEnd - document.body.clientWidth) - 10;
+
+    var coord = {};
+    coord.top = topForm;
+    coord.left = left;
+
+    return coord;
+  }
+
+  var deleteNode = function(el){
+    if ($(el).attr('children') && $(el).attr('children').length > 0)
+      alert('Impossible to delete this node because it has children.');
+    else
+    {
+      var answer = confirm("Delete?");
+      if (answer)
+      {
+        id = $(el).attr('id').replace('p','');
+        $.post('deleteFromChart', {node_id : id}, null, "script");
+        $(el).remove();
+        $("#chart").refresh();
+      }
+    }
+    return false;
+  }
+
+  var initChart = function(data) {
+
+    $("#chart").jOrgChart({
+      chartElement : '#chart',
+      dragAndDrop  : false,
+      data:data
+    });
+
+    $(".node").contextMenu({
+        menu: 'myMenu'
+      },
+      function(action, el, pos) {
+        if (action == "add")
+          addForm(el, pos);
+        else if (action == "edit")
+          editForm(el, pos);
+        else if (action == "delete")
+          deleteNode(el);
+    });
+
+    $(".node").each(function(){
+      $(this).disableContextMenuItems('#deleteNode');
+    });
+
+    if(data == null)
+      return false;
+    else
+      return true;
+  }
+
+  jQuery(document).ready(function() {
+
+    initOk = initChart(<%= raw @data%>);
+    if(!initOk)
+    {
+      $('#nodeForm > div.form-close').css('display','none');
+      $('#nodeForm').css('position','relative');
+      addForm();
+    }
+
+    $('#nodeForm').submit(function (){
+
+      $.post($(this).attr('action'), $(this).serialize(), function(result) {
+        $("#chart").empty();
+        initChart(result);
+      });
+
+      $('#nodeForm').css('display', 'none');
+      return false;
+    });
+
+  });
+</script>
+<ul id="myMenu" class="contextMenu">
+    <li class="">
+        <a href="#add">New node</a>
+    </li>
+    <li class="edit">
+        <a href="#edit">Edit</a>
+    </li>
+    <li class="delete">
+        <a href="#delete">Delete</a>
+    </li>
+</ul>
+
+  <form id="nodeForm" method="post" action="addToChart" style="display:none;">
+    <div class="form-title">Node configuration</div>
+    <div style="width:360px;float:left;">
+      <label>Title :</label><input type="text" name="title"/><br>
+      <label>English :</label><input type="text" name="english"/><br>
+      <label>Chinese :</label><input type="text" name="chinese"/><br>
+      <label>Comment :</label><input type="text" name="comment"/><br>
+    </div>
+    <div style="float:right;text-align:left;">
+      <label>Type :</label><input type="text" name="node_type" style="width:100px;"/><br>
+      <label>Width :</label><input type="text" name="width" style="width:100px;"/><br>
+      <label>Border :</label><input name="border_color" value="#FFFFFF" class="color {hash:true}" autocomplete="off" style="background-image: none; background-color: rgb(186, 255, 211); color: rgb(0, 0, 0); width:100px;"><br>
+      <label>Background :</label><input name="background_color" value="#FFFFFF" class="color {hash:true}" autocomplete="off" style="background-image: none; background-color: rgb(186, 255, 211); color: rgb(0, 0, 0);width:100px;"><br>
+    </div>
+    <label>Parents :</label>
+    <select name="parents[]" multiple style="width:100%;">
+      <% @nodes.each do |node| %>
+        <option value="<%=node.id%>"><%=node.title%></option>
+      <% end %>
+    </select>
+
+    <input type="hidden" name="node_id">
+    <input type="hidden" name="parent_id">
+    <input type="hidden" name="chart_id" value="<%=@chart.id%>">
+    <div style="clear:both;text-align:center;">
+      <input type="submit" value="Submit"/>
+      <div class="form-close" onclick="closeThis('nodeForm')">Close</div>
+    </div>
+  </form>
+
+<div id="chart" class="orgChart" style="position:relative"></div>
+input type="text" id="width" name="width" style="width:77px;text-align:center;border:0; color:#f6931f; font-weight:bold;" disabled/>
+      <div id="slider" style="width:210px;margin-bottom:10px;"></div>
+      <label>Border :</label><input name="border_color" value="#FFFFFF" class="color {hash:true}" autocomplete="off" style="background-image: none; background-color: rgb(186, 255, 211); color: rgb(0, 0, 0); width:100px;"><br>
+      <label>Background :</label><input name="background_color" value="#FFFFFF" class="color {hash:true}" autocomplete="off" style="background-image: none; background-color: rgb(186, 255, 211); color: rgb(0, 0, 0);width:100px;"><br>
+    </div>
+    <label>Parents :</label>
+    <div class="multiselect" style="width:100%;clear:both;">
+    	<% @nodes.each do |node| %>
+    	  <div><input type="checkbox" name="parents[]" value="<%=node.id%>" /><%=node.title%></div>
+    	<% end %>
+    </div>
+
+    <input type="hidden" name="node_id">
+    <input type="hidden" name="parent_id">
+    <input type="hidden" name="chart_id" value="<%=@chart.id%>">
+    <div style="clear:both;text-align:center;">
+      <input type="submit" value="Submit"/>
+      <div class="form-close" onclick="closeThis('nodeForm')">Close</div>
+    </div>
+  </form>
+</div>
+<div id="chart" class="orgChart" style="position:relative"></div>
+rt" class="orgChart" style="position:relative"></div>
+ut type="submit" value="Submit"/>
+    </div>
+  </form>
+</div>
+<div id="chart" class="orgChart" style="position:relative"></div>
+t type="checkbox" name="parents[]" value="<%=node.id%>" /><%=node.title%></div>
+    	<% end %>
+    </div>
+    </fieldset>
+
+    <input type="hidden" name="node_id">
+    <input type="hidden" name="parent_id">
+    <input type="hidden" name="chart_id" value="<%=@chart.id%>">
+    <div style="clear:both;text-align:center;">
+      <input type="submit" value="Submit"/>
+    </div>
+  </form>
+</div>
+<div id="chart" class="orgChart" style="position:relative"></div>

@@ -1,0 +1,19 @@
+.multiselect {
+    /*width:20em;*/
+    height:10em;
+    border:solid 1px #c0c0c0;
+    overflow:auto;
+}
+ 
+.multiselect div {
+    display:block;
+}
+
+.multiselect > div > input {
+	width:auto!important;
+}
+ 
+.multiselect-on {
+    color:#ffffff;
+    background-color:#000099;
+}
