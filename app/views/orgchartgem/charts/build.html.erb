@@ -8,28 +8,34 @@
   }
 
   var addForm = function(parent, pos){
-    $('#nodeForm').reset();
-    $('input[name=node_id]').val(null);
-    if (parent)
+
+    if ($(parent).attr('node_type') == "pile-son")
+      alert('Impossible to add a node to this kind of node.');
+    else
     {
-      parent_id = $(parent).attr('id').replace('p','');
-      $('input[name=parent_id]').val(parent_id);
+      $('#nodeForm').reset();
+      $('input[name=node_id]').val(null);
+      if (parent)
+      {
+        parent_id = $(parent).attr('id').replace('p','');
+        $('input[name=parent_id]').val(parent_id);
 
-      var checkboxes = $(".multiselect").find("input:checkbox");
-      checkboxes.each(function() {
-        var checkbox = $(this);
-        if (checkbox.attr('value') == parent_id)
-          checkbox.attr('checked', true);
-        else
-          checkbox.attr('checked', false);
-      });
-      $(".multiselect").multiselect();
+        var checkboxes = $(".multiselect").find("input:checkbox");
+        checkboxes.each(function() {
+          var checkbox = $(this);
+          if (checkbox.attr('value') == parent_id)
+            checkbox.attr('checked', true);
+          else
+            checkbox.attr('checked', false);
+        });
+        $(".multiselect").multiselect();
 
-      coord = validCoord(pos);
-      $('#windowForm').dialog({position:[coord.x, coord.y]});
+        coord = validCoord(pos);
+        $('#windowForm').dialog({position:[coord.x, coord.y]});
+      }
+      $("#windowForm").dialog('open');
+      return false;
     }
-    $("#windowForm").dialog('open');
-    return false;
   }
 
   var editForm = function(el, pos){
@@ -43,7 +49,7 @@
         $('input[name=chinese]').val(result['chinese']);
         $('input[name=english]').val(result['english']);
         $('input[name=comment]').val(result['comment']);
-        //$('input[name=node_type]').val(result['node_type']);
+
         decorations=result['decoration'].split(';');
         for (var i=0; i<decorations.length; i++)
         {
@@ -55,8 +61,8 @@
         $('input[name=background_color]').css('background-color',$('input[name=background_color]').val());
         if ($('input[name=width]').val() != '')
         {
-        	$("#activeWidth").attr('checked', true);
-        	$("input[name=width]").attr('disabled', false);
+          $("#activeWidth").attr('checked', true);
+          $("input[name=width]").attr('disabled', false);
         }
         else
         {
@@ -65,6 +71,10 @@
         }
 
         $("select[name=node_type]").val(result['node_type']);
+        if (result['node_type'] == "pile-son")
+          $("select[name=node_type]").attr('disabled', true);
+        else
+          $("select[name=node_type]").attr('disabled', false);
 
 
         parents_ids = [];

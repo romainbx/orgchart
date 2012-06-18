@@ -44,7 +44,10 @@ module Orgchartgem
         node.english = params[:english]
         node.chinese = params[:chinese]
         node.comment = params[:comment]
-        node.node_type = params[:node_type]
+        # For the pile-son, only the modification of the parent (pile) can reset the node_type
+        if node.node_type != "pile-son"
+          node.node_type = params[:node_type]
+        end
         node.decoration = 'width:'+width +';background-color:'+ params[:background_color] +';border-color:'+ params[:border_color]
 
         if params[:parents] && !params[:parents].empty?
