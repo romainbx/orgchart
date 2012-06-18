@@ -4,11 +4,12 @@ module Orgchartgem
 
     def chartNodes(chartId)
 
-      origin = Node.all(
+      origin = Node.find(Node.all(
+        :select => 'nodes.id',
         :conditions => ["chart_id = ?", chartId],
         :joins => 'LEFT JOIN "parents_children" ON "parents_children"."child_id" = "nodes"."id"',
         :group => "parent_id",
-        :having => "count(parent_id) <= 0").first
+        :having => "count(parent_id) <= 0").first)
 
       return buildOrg(origin).to_json if origin
     end
